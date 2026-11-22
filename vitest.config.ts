@@ -19,6 +19,7 @@ export default defineConfig({
     // Component tests are slower under V8 coverage instrumentation, especially
     // on Windows. The default 5s is too tight for the full AppShell render.
     testTimeout: 20_000,
+    maxWorkers: 3,
     restoreMocks: true,
     unstubGlobals: true,
     coverage: {
