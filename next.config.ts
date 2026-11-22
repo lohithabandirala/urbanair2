@@ -1,3 +1,5 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import type { NextConfig } from "next";
 
 /**
@@ -13,6 +15,9 @@ const securityHeaders = [
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "X-DNS-Prefetch-Control", value: "off" },
   { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+  { key: "Cross-Origin-Resource-Policy", value: "same-origin" },
+  { key: "X-Permitted-Cross-Domain-Policies", value: "none" },
+  { key: "X-XSS-Protection", value: "0" },
   {
     key: "Permissions-Policy",
     value: "camera=(), microphone=(), payment=(), usb=(), geolocation=(self)",
@@ -25,7 +30,9 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   // Pin the workspace root so Turbopack ignores unrelated parent lockfiles.
-  turbopack: { root: import.meta.dirname },
+  // `fileURLToPath` keeps this working on Node 20.9/20.10, where
+  // `import.meta.dirname` is not available yet.
+  turbopack: { root: path.dirname(fileURLToPath(import.meta.url)) },
   // The E2E runner may reach the dev server through either hostname.
   allowedDevOrigins: ["localhost", "127.0.0.1"],
   reactStrictMode: true,

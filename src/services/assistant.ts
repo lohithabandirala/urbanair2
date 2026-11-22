@@ -174,12 +174,17 @@ export async function callGemini(
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
     model,
-  )}:generateContent?key=${encodeURIComponent(key)}`;
+  )}:generateContent`;
   const thinkingConfig = thinkingConfigFor(model);
 
   const response = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      // Keep the key out of the URL so it cannot leak through proxy or access
+      // logs. Google's API accepts the same credential in this header.
+      "x-goog-api-key": key,
+    },
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: systemPrompt }] },
       contents: [{ role: "user", parts: [{ text: question }] }],

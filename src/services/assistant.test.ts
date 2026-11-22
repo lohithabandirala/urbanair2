@@ -258,6 +258,8 @@ describe("answerQuestion", () => {
 
     const request = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(request[0]).toContain("generativelanguage.googleapis.com");
+    expect(String(request[0])).not.toContain("key=");
+    expect(request[1].headers).toMatchObject({ "x-goog-api-key": "key" });
     const body = JSON.parse(String(request[1].body)) as {
       systemInstruction: { parts: Array<{ text: string }> };
       contents: Array<{ parts: Array<{ text: string }> }>;
@@ -343,7 +345,10 @@ describe("callGemini", () => {
     const result = await callGemini("question", "prompt", "gemini-test");
 
     expect(result).toEqual({ text: "Answer", model: "gemini-test" });
-    expect(String(fetchMock.mock.calls[0]?.[0])).toContain("gemini-test");
+    const request = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(String(request[0])).toContain("gemini-test");
+    expect(String(request[0])).not.toContain("key=");
+    expect(request[1].headers).toMatchObject({ "x-goog-api-key": "key" });
   });
 
   it("disables hidden thinking for flash models so the answer is not empty", async () => {

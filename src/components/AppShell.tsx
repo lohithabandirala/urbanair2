@@ -4,6 +4,7 @@ import { useCallback, useMemo } from "react";
 import type { AirQualitySnapshot, ResolvedLocation } from "@/domain/types";
 import { buildDailyPlan } from "@/domain/plan";
 import { DEFAULT_LOCATION } from "@/lib/config";
+import { localizeApiError } from "@/lib/errors";
 import { formatObservedAt, localeFor } from "@/lib/format";
 import { useAirQuality, useWeather } from "@/hooks/useAirQuality";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
@@ -79,6 +80,9 @@ export function AppShell() {
   const nowHour = useNowHour(location.timezone ?? air.data?.location.timezone);
 
   const snapshot = air.data;
+  const airErrorText = air.error
+    ? localizeApiError(dict, air.errorCode, air.error, language === "en")
+    : null;
   const plan = useMemo(
     () =>
       snapshot
@@ -185,9 +189,7 @@ export function AppShell() {
                 className="flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm font-medium text-amber-950"
               >
                 <IconAlert className="mt-0.5 h-4 w-4 shrink-0" />
-                <span>
-                  {dict.errors.upstream} {air.error}
-                </span>
+                <span>{airErrorText}</span>
               </p>
             ) : null}
 
@@ -256,7 +258,7 @@ export function AppShell() {
               <IconAlert className="mt-0.5 h-5 w-5 shrink-0" />
               <div>
                 <p className="font-bold">{dict.errors.generic}</p>
-                <p className="mt-1 text-sm">{air.error}</p>
+                <p className="mt-1 text-sm">{airErrorText}</p>
                 <button
                   type="button"
                   className="btn mt-3 px-3 py-1.5 text-xs"

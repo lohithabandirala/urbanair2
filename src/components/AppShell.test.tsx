@@ -7,6 +7,7 @@ import { expectNoA11yViolations, renderWithI18n } from "@/test/render";
 import { AppShell } from "./AppShell";
 
 const en = getDictionary("en");
+const hi = getDictionary("hi");
 
 const SAMPLE = makeSnapshot({
   source: "demo",
@@ -97,5 +98,24 @@ describe("AppShell", () => {
     expect(
       screen.getAllByRole("button", { name: en.common.retry }).length,
     ).toBeGreaterThan(0);
+  });
+
+  it("localizes API error messages in Hindi", async () => {
+    mockApi(async () =>
+      jsonResponse(
+        {
+          ok: false,
+          error: { code: "providers_down", message: "No provider succeeded" },
+        },
+        { status: 503 },
+      ),
+    );
+
+    renderWithI18n(<AppShell />, { language: "hi" });
+
+    expect(
+      (await screen.findAllByText(hi.errors.upstream)).length,
+    ).toBeGreaterThan(0);
+    expect(screen.queryByText("No provider succeeded")).not.toBeInTheDocument();
   });
 });

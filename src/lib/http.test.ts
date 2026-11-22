@@ -65,17 +65,25 @@ describe("readJsonBody", () => {
     });
   }
 
-  it("parses a JSON body", async () => {
+  it("parses a JSON body with optional media-type parameters", async () => {
     const body = await readJsonBody(
-      request('{"hello":"world"}', { "content-type": "application/json" }),
+      request('{"hello":"world"}', {
+        "content-type": "application/json; charset=utf-8",
+      }),
     );
     expect(body).toEqual({ hello: "world" });
   });
 
-  it("rejects non-JSON content types", async () => {
-    await expect(
-      readJsonBody(request("hello", { "content-type": "text/plain" })),
-    ).rejects.toMatchObject({ status: 415 });
+  it("rejects non-JSON and lookalike content types", async () => {
+    for (const contentType of [
+      "text/plain",
+      "text/application/json",
+      "application/jsonp",
+    ]) {
+      await expect(
+        readJsonBody(request("hello", { "content-type": contentType })),
+      ).rejects.toMatchObject({ status: 415 });
+    }
   });
 
   it("rejects bodies that declare an excessive length", async () => {

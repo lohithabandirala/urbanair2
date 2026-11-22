@@ -68,7 +68,7 @@ test.describe("grounded assistant", () => {
         contentType: "application/json",
         body: JSON.stringify({
           ok: false,
-          error: { message: "Model unavailable" },
+          error: { code: "assistant_error", message: "Model unavailable" },
         }),
       });
     });
@@ -82,7 +82,7 @@ test.describe("grounded assistant", () => {
       .fill("AQI क्या है?");
     await section.getByRole("button", { name: hi.assistant.send }).click();
 
-    await expect(section.getByRole("alert")).toContainText("Model unavailable");
+    await expect(section.getByRole("alert")).toContainText(hi.assistant.error);
     await expect(section.getByRole("alert")).toBeFocused();
     expect(requestBody).toMatchObject({ language: "hi" });
   });

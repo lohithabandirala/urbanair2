@@ -66,7 +66,8 @@ export async function readJsonBody(
   maxBytes = MAX_BODY_BYTES,
 ): Promise<unknown> {
   const contentType = request.headers.get("content-type") ?? "";
-  if (!contentType.toLowerCase().includes("application/json")) {
+  const mediaType = contentType.split(";")[0]?.trim().toLowerCase();
+  if (mediaType !== "application/json") {
     throw new HttpError(
       415,
       "unsupported_media_type",

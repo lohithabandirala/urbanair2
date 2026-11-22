@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { LanguageProvider } from "@/components/LanguageProvider";
+import { SkipLink } from "@/components/SkipLink";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 
@@ -40,9 +41,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <LanguageProvider>
-          <a href="#main" className="skip-link">
-            Skip to main content
-          </a>
+          <SkipLink />
           <Header />
           {children}
           <Footer />

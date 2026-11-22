@@ -12,6 +12,7 @@ import type {
   ResolvedLocation,
   UserProfile,
 } from "@/domain/types";
+import { localizeApiError } from "@/lib/errors";
 import { formatNumber, localeFor } from "@/lib/format";
 import { interpolate } from "@/lib/i18n";
 import { useI18n } from "./LanguageProvider";
@@ -98,11 +99,15 @@ export function ChatAssistant({
           noticeKey?: string;
           sources?: SourceReference[];
         };
-        error?: { message?: string };
+        error?: { code?: string; message?: string };
       };
 
       if (!response.ok || body.ok !== true || !body.data?.answer) {
-        throw new Error(body.error?.message || dict.assistant.error);
+        const failure = new Error(
+          body.error?.message || dict.assistant.error,
+        ) as Error & { code?: string };
+        failure.code = body.error?.code ?? "assistant_error";
+        throw failure;
       }
 
       setMessages((previous) => [
@@ -117,7 +122,12 @@ export function ChatAssistant({
         },
       ]);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : dict.assistant.error);
+      const code =
+        (caught as { code?: string }).code ??
+        (caught instanceof TypeError ? "network" : "assistant_error");
+      const fallback =
+        caught instanceof Error ? caught.message : dict.assistant.error;
+      setError(localizeApiError(dict, code, fallback, language === "en"));
     } finally {
       setPending(false);
       inputRef.current?.focus();

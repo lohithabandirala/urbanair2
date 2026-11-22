@@ -187,11 +187,11 @@ Open <http://localhost:3000>.
 | `npm run build` | Production build. |
 | `npm start` | Serve the production build. |
 | `npm run lint` | ESLint (Next.js config). |
-| `npm run typecheck` | `tsc --noEmit`. |
+| `npm run typecheck` | `next typegen` then `tsc --noEmit` (works on a fresh clone). |
 | `npm test` | Vitest unit, API, component and security tests. |
 | `npm run test:coverage` | Vitest with V8 coverage and thresholds. |
 | `npm run test:e2e` | Playwright E2E (desktop + mobile Chromium). |
-| `npm run verify` | Lint → typecheck → unit tests → production build. |
+| `npm run verify` | Lint → typecheck (typegen + tsc) → unit tests → production build. |
 
 First-time E2E setup:
 
@@ -259,8 +259,9 @@ and never echoed to the client.
 
 `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`,
 `Referrer-Policy: strict-origin-when-cross-origin`, `X-DNS-Prefetch-Control: off`,
-`Cross-Origin-Opener-Policy: same-origin`, a restrictive `Permissions-Policy`,
-and HSTS. `X-Powered-By` is disabled.
+`Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy: same-origin`,
+`X-Permitted-Cross-Domain-Policies: none`, `X-XSS-Protection: 0`, a restrictive
+`Permissions-Policy`, and HSTS. `X-Powered-By` is disabled.
 
 ### Input and output safety
 
@@ -273,11 +274,13 @@ and HSTS. `X-Powered-By` is disabled.
 - **No `dangerouslySetInnerHTML`, raw `innerHTML`, `eval`, `new Function`, or
   `document.write` anywhere in shipped source.** A security test enforces this.
 - External links use `rel="noopener noreferrer"` (also enforced by a test).
-- A source scan checks for accidental Google/OpenAI/AWS keys and private-key blocks.
+- A source scan checks for accidental Google/Gemini/OpenAI/AWS keys and private-key blocks.
 
 ### Secret handling
 
 - Keys are read at call time from `process.env` in server modules.
+- The Gemini credential is sent in the `x-goog-api-key` header, never in the URL,
+  so it cannot leak through proxy or access logs.
 - `/api/health` exposes only booleans, never key values.
 - `.env*` files are git-ignored; `.env.example` contains placeholders only.
 
@@ -302,8 +305,8 @@ and HSTS. `X-Powered-By` is disabled.
 - `prefers-reduced-motion` disables smooth scrolling and animations.
 - Full `lang` switching (`html[lang]` updates with the selected language).
 - Automated axe checks run in component tests and E2E (WCAG 2.1 A/AA).
-  Colour contrast is covered by the palette and disabled in automated scans
-  because gradient backgrounds are not reliably measurable in jsdom/headless runs.
+  Colour contrast is measured in the real-browser E2E run; jsdom component
+  tests disable that one rule because jsdom has no layout engine.
 
 ---
 
@@ -327,12 +330,12 @@ and HSTS. `X-Powered-By` is disabled.
 
 | Suite | Result |
 | --- | --- |
-| Vitest unit / API / component / security | **286 passing** across 43 files |
+| Vitest unit / API / component / security | **295 passing** across 45 files |
 | Playwright E2E (desktop + mobile Chromium) | **42 passing** (21 scenarios × 2 projects) |
-| Statement coverage | **98.09%** |
-| Branch coverage | **86.23%** |
+| Statement coverage | **98.11%** |
+| Branch coverage | **86.26%** |
 | Function coverage | **100%** |
-| Line coverage | **98.09%** |
+| Line coverage | **98.11%** |
 
 Coverage thresholds are enforced for `src/domain`, `src/lib` and `src/services`
 at 80% statements/lines/functions and 75% branches.
@@ -373,10 +376,10 @@ npm run verify           # lint + typecheck + unit tests + build
 | Criterion | Weight | How it is addressed |
 | --- | --- | --- |
 | **Problem alignment** | 30% | Real live AQI with provenance; personalised day plan; indoor checklist; commute-impact calculator; grounded assistant; bilingual EN/HI; explicit sample/modelled labelling; vulnerable-group and cooking-fuel awareness. |
-| **Code quality** | 20% | Strict TypeScript; pure domain layer; shared service layer (no duplicated fetches); small composable components; Zod schemas; consistent error envelope; documented modules; 286 unit/API/component tests. |
+| **Code quality** | 20% | Strict TypeScript; pure domain layer; shared service layer (no duplicated fetches); small composable components; Zod schemas; consistent error envelope; documented modules; 295 unit/API/component tests. |
 | **Security** | 15% | Per-request nonce CSP in `src/proxy.ts`; hardening headers; dynamic rendering; strict Zod validation; body limits; rate limiting; prompt-injection guard; sanitised plain-text output; no unsafe HTML/eval; server-only secrets; automated security scans. |
 | **Efficiency** | 15% | SWR cache with stale windows; provider cooldowns; parallel air/weather fetches; route/CDN cache headers; minimal runtime dependencies; server re-fetch only where grounding requires it. |
-| **Testing** | 10% | 286 Vitest tests + 42 Playwright E2E tests; 98.09% statement, 86.23% branch, 100% function coverage; security and accessibility suites. |
+| **Testing** | 10% | 295 Vitest tests + 42 Playwright E2E tests; 98.11% statement, 86.26% branch, 100% function coverage; security and accessibility suites. |
 | **Accessibility** | 10% | Semantic landmarks, skip link, one h1, labels, live regions, keyboard support, visible focus, reduced motion, language switching, axe checks in component and E2E tests. |
 
 ---

@@ -7,6 +7,7 @@ interface ApiState<T> {
   data: T | null;
   loading: boolean;
   error: string | null;
+  errorCode: string | null;
 }
 
 /**
@@ -19,13 +20,20 @@ export function useApiResource<T>(url: string | null) {
     data: null,
     loading: Boolean(url),
     error: null,
+    errorCode: null,
   });
   const [nonce, setNonce] = useState(0);
   const currentUrl = useRef<string | null>(null);
 
   useEffect(() => {
     if (!url) {
-      setState({ url: null, data: null, loading: false, error: null });
+      setState({
+        url: null,
+        data: null,
+        loading: false,
+        error: null,
+        errorCode: null,
+      });
       currentUrl.current = null;
       return;
     }
@@ -36,8 +44,8 @@ export function useApiResource<T>(url: string | null) {
 
     setState((previous) =>
       urlChanged
-        ? { url, data: null, loading: true, error: null }
-        : { ...previous, url, loading: true, error: null },
+        ? { url, data: null, loading: true, error: null, errorCode: null }
+        : { ...previous, url, loading: true, error: null, errorCode: null },
     );
 
     async function load() {
@@ -49,13 +57,17 @@ export function useApiResource<T>(url: string | null) {
         const body = (await response.json()) as {
           ok?: boolean;
           data?: T;
-          error?: { message?: string };
+          error?: { code?: string; message?: string };
         };
 
         if (!response.ok || body.ok !== true) {
-          throw new Error(
+          const failure = new Error(
             body.error?.message || `Request failed (${response.status})`,
-          );
+          ) as Error & { code?: string };
+          failure.code =
+            body.error?.code ??
+            (response.status >= 500 ? "upstream_error" : `http_${response.status}`);
+          throw failure;
         }
 
         setState({
@@ -63,15 +75,20 @@ export function useApiResource<T>(url: string | null) {
           data: body.data as T,
           loading: false,
           error: null,
+          errorCode: null,
         });
       } catch (error) {
         if (controller.signal.aborted) return;
+        const code =
+          (error as { code?: string }).code ??
+          (error instanceof TypeError ? "network" : "unknown");
         setState((previous) => ({
           ...previous,
           url,
           loading: false,
           error:
             error instanceof Error ? error.message : "Request failed",
+          errorCode: code,
         }));
       }
     }
@@ -86,6 +103,7 @@ export function useApiResource<T>(url: string | null) {
     data: state.data,
     loading: state.loading,
     error: state.error,
+    errorCode: state.errorCode,
     refresh,
   };
 }

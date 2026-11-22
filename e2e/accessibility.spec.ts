@@ -88,9 +88,9 @@ test.describe("keyboard and accessibility", () => {
           type: "tag",
           values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"],
         },
-        // jsdom-free browser run still cannot judge gradient backgrounds
-        // reliably; colour contrast is covered by the design tokens instead.
-        rules: { "color-contrast": { enabled: false } },
+        // The real browser can measure rendered colours, so contrast is part
+        // of the gate here. jsdom component tests disable it (no layout engine).
+        rules: { "color-contrast": { enabled: true } },
       });
     });
 

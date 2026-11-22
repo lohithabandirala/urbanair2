@@ -22,11 +22,13 @@ function sourceFiles(dir: string, acc: string[] = []): string[] {
   return acc;
 }
 
-const FILES = [
-  ...sourceFiles(path.join(ROOT, "src")),
-  path.join(ROOT, "src", "proxy.ts"),
-  path.join(ROOT, "next.config.ts"),
-].map((file) => ({
+const FILES = Array.from(
+  new Set([
+    ...sourceFiles(path.join(ROOT, "src")),
+    path.join(ROOT, "src", "proxy.ts"),
+    path.join(ROOT, "next.config.ts"),
+  ]),
+).map((file) => ({
   file,
   relative: path.relative(ROOT, file),
   text: readFileSync(file, "utf8"),
@@ -73,6 +75,7 @@ describe("security: no unsafe HTML or code execution", () => {
 describe("security: secrets stay out of source", () => {
   const SECRET_PATTERNS: Array<[string, RegExp]> = [
     ["Google API key", /AIza[0-9A-Za-z_-]{35}/],
+    ["Google Gemini key", /\bAQ\.[A-Za-z0-9_-]{30,}/],
     ["OpenAI-style key", /\bsk-[A-Za-z0-9]{20,}/],
     ["AWS access key", /\bAKIA[0-9A-Z]{16}\b/],
     ["private key block", /-----BEGIN (?:RSA |EC )?PRIVATE KEY-----/],
@@ -103,8 +106,20 @@ describe("security: response headers", () => {
     expect(headers["x-frame-options"]).toBe("DENY");
     expect(headers["referrer-policy"]).toBe("strict-origin-when-cross-origin");
     expect(headers["cross-origin-opener-policy"]).toBe("same-origin");
+    expect(headers["cross-origin-resource-policy"]).toBe("same-origin");
+    expect(headers["x-permitted-cross-domain-policies"]).toBe("none");
+    expect(headers["x-xss-protection"]).toBe("0");
     expect(headers["strict-transport-security"]).toContain("max-age=");
     expect(headers["permissions-policy"]).toContain("camera=()");
+  });
+
+  it("sends the Gemini key in a header, never in the URL", () => {
+    const assistant = FILES.find(({ relative }) =>
+      /services[\\/]assistant\.ts$/.test(relative),
+    );
+    expect(assistant).toBeTruthy();
+    expect(assistant!.text).toContain('"x-goog-api-key"');
+    expect(assistant!.text).not.toMatch(/generateContent\?key=/);
   });
 
   it("does not ship a weak global CSP (it is per-request instead)", async () => {
