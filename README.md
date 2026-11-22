@@ -106,6 +106,10 @@ The assistant is an **explanation layer**, not a data source.
 7. If Gemini is unavailable or not configured, a deterministic responder builds
    an answer from the same snapshot and translated advice.
 
+Gemini 3.x Flash can spend its output budget on hidden reasoning, so Flash
+requests disable thinking and allow up to 45 seconds before falling back. This
+keeps answers from being empty and gives cold requests enough time to complete.
+
 The UI displays the provider (`Gemini`, `Grounded fallback`, or `Guard`), a
 fallback notice when relevant, and links to the underlying public sources.
 
@@ -323,12 +327,12 @@ and HSTS. `X-Powered-By` is disabled.
 
 | Suite | Result |
 | --- | --- |
-| Vitest unit / API / component / security | **284 passing** across 43 files |
+| Vitest unit / API / component / security | **286 passing** across 43 files |
 | Playwright E2E (desktop + mobile Chromium) | **42 passing** (21 scenarios × 2 projects) |
-| Statement coverage | **98.08%** |
-| Branch coverage | **86.09%** |
+| Statement coverage | **98.09%** |
+| Branch coverage | **86.23%** |
 | Function coverage | **100%** |
-| Line coverage | **98.08%** |
+| Line coverage | **98.09%** |
 
 Coverage thresholds are enforced for `src/domain`, `src/lib` and `src/services`
 at 80% statements/lines/functions and 75% branches.
@@ -369,10 +373,10 @@ npm run verify           # lint + typecheck + unit tests + build
 | Criterion | Weight | How it is addressed |
 | --- | --- | --- |
 | **Problem alignment** | 30% | Real live AQI with provenance; personalised day plan; indoor checklist; commute-impact calculator; grounded assistant; bilingual EN/HI; explicit sample/modelled labelling; vulnerable-group and cooking-fuel awareness. |
-| **Code quality** | 20% | Strict TypeScript; pure domain layer; shared service layer (no duplicated fetches); small composable components; Zod schemas; consistent error envelope; documented modules; 284 unit/API/component tests. |
+| **Code quality** | 20% | Strict TypeScript; pure domain layer; shared service layer (no duplicated fetches); small composable components; Zod schemas; consistent error envelope; documented modules; 286 unit/API/component tests. |
 | **Security** | 15% | Per-request nonce CSP in `src/proxy.ts`; hardening headers; dynamic rendering; strict Zod validation; body limits; rate limiting; prompt-injection guard; sanitised plain-text output; no unsafe HTML/eval; server-only secrets; automated security scans. |
 | **Efficiency** | 15% | SWR cache with stale windows; provider cooldowns; parallel air/weather fetches; route/CDN cache headers; minimal runtime dependencies; server re-fetch only where grounding requires it. |
-| **Testing** | 10% | 284 Vitest tests + 42 Playwright E2E tests; 98.08% statement, 86.09% branch, 100% function coverage; security and accessibility suites. |
+| **Testing** | 10% | 286 Vitest tests + 42 Playwright E2E tests; 98.09% statement, 86.23% branch, 100% function coverage; security and accessibility suites. |
 | **Accessibility** | 10% | Semantic landmarks, skip link, one h1, labels, live regions, keyboard support, visible focus, reduced motion, language switching, axe checks in component and E2E tests. |
 
 ---
