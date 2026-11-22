@@ -9,6 +9,9 @@ export default defineConfig([
     rules: {
       "no-console": ["warn", { allow: ["warn", "error", "info"] }],
       "react/no-danger": "error",
+      "prefer-const": "error",
+      "no-var": "error",
+      "eqeqeq": ["error", "always", { null: "ignore" }],
     },
   },
   globalIgnores([
