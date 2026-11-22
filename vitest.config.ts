@@ -15,6 +15,9 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./vitest.setup.ts"],
     include: ["src/**/*.test.{ts,tsx}"],
+    // Component tests are slower under V8 coverage instrumentation, especially
+    // on Windows. The default 5s is too tight for the full AppShell render.
+    testTimeout: 20_000,
     restoreMocks: true,
     unstubGlobals: true,
     coverage: {
