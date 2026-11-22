@@ -345,6 +345,38 @@ describe("callGemini", () => {
     expect(result).toEqual({ text: "Answer", model: "gemini-test" });
     expect(String(fetchMock.mock.calls[0]?.[0])).toContain("gemini-test");
   });
+
+  it("disables hidden thinking for flash models so the answer is not empty", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "key");
+    const fetchMock = vi.fn<
+      (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>
+    >(async () => geminiResponse("Answer"));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await callGemini("question", "prompt", "gemini-3.8-flash");
+
+    const init = fetchMock.mock.calls[0]?.[1];
+    const body = JSON.parse(String(init?.body)) as {
+      generationConfig: { thinkingConfig?: { thinkingBudget: number } };
+    };
+    expect(body.generationConfig.thinkingConfig).toEqual({ thinkingBudget: 0 });
+  });
+
+  it("does not send thinking config to pro models", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "key");
+    const fetchMock = vi.fn<
+      (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>
+    >(async () => geminiResponse("Answer"));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await callGemini("question", "prompt", "gemini-3.1-pro-preview");
+
+    const init = fetchMock.mock.calls[0]?.[1];
+    const body = JSON.parse(String(init?.body)) as {
+      generationConfig: { thinkingConfig?: unknown };
+    };
+    expect(body.generationConfig.thinkingConfig).toBeUndefined();
+  });
 });
 
 describe("answerSources", () => {

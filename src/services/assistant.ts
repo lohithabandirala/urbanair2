@@ -157,6 +157,13 @@ interface GeminiResult {
   model: string;
 }
 
+/** Flash models can spend the whole output budget on hidden reasoning. */
+function thinkingConfigFor(model: string) {
+  return /^gemini-(?:2\.5|3(?:\.\d+)?)-flash/i.test(model)
+    ? { thinkingBudget: 0 }
+    : undefined;
+}
+
 export async function callGemini(
   question: string,
   systemPrompt: string,
@@ -168,6 +175,7 @@ export async function callGemini(
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
     model,
   )}:generateContent?key=${encodeURIComponent(key)}`;
+  const thinkingConfig = thinkingConfigFor(model);
 
   const response = await fetch(url, {
     method: "POST",
@@ -179,6 +187,7 @@ export async function callGemini(
         temperature: 0.2,
         topP: 0.9,
         maxOutputTokens: 500,
+        ...(thinkingConfig ? { thinkingConfig } : {}),
       },
       safetySettings: [
         {
@@ -199,7 +208,9 @@ export async function callGemini(
         },
       ],
     }),
-    signal: AbortSignal.timeout(15_000),
+    // Gemini 3.x flash can take 30s+ on a cold request; keep the fallback fast
+    // but give the model enough room to answer.
+    signal: AbortSignal.timeout(45_000),
     cache: "no-store",
   });
 
