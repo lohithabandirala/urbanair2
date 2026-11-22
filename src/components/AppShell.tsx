@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useMemo } from "react";
-import type { AirQualitySnapshot, ResolvedLocation } from "@/domain/types";
+import type { ResolvedLocation } from "@/domain/types";
+import { normalizeLocation } from "@/domain/location";
 import { buildDailyPlan } from "@/domain/plan";
 import { DEFAULT_LOCATION } from "@/lib/config";
 import { localizeApiError } from "@/lib/errors";
@@ -19,6 +20,7 @@ import { IndoorChecklist } from "./IndoorChecklist";
 import { LocationPicker } from "./LocationPicker";
 import { PollutantTable } from "./PollutantTable";
 import { ProfilePanel } from "./ProfilePanel";
+import { SampleDataBanner } from "./SampleDataBanner";
 import { SharePlan } from "./SharePlan";
 import { SmogAlert } from "./SmogAlert";
 import { SourceBadge } from "./SourceBadge";
@@ -27,39 +29,6 @@ import { useI18n } from "./LanguageProvider";
 import { IconAlert, IconRefresh, IconWind } from "./icons";
 
 const LOCATION_KEY = "saaf-hawa.location.v1";
-
-function isValidLocation(value: unknown): value is ResolvedLocation {
-  if (!value || typeof value !== "object") return false;
-  const candidate = value as Partial<ResolvedLocation>;
-  return (
-    typeof candidate.city === "string" &&
-    candidate.city.trim().length > 0 &&
-    candidate.city.length <= 80 &&
-    typeof candidate.latitude === "number" &&
-    Number.isFinite(candidate.latitude) &&
-    candidate.latitude >= -90 &&
-    candidate.latitude <= 90 &&
-    typeof candidate.longitude === "number" &&
-    Number.isFinite(candidate.longitude) &&
-    candidate.longitude >= -180 &&
-    candidate.longitude <= 180
-  );
-}
-
-/** Stored locations come from localStorage, so treat them as untrusted. */
-function normalizeLocation(value: unknown): ResolvedLocation {
-  if (!isValidLocation(value)) return DEFAULT_LOCATION;
-  return {
-    city: value.city.trim(),
-    region: typeof value.region === "string" ? value.region : undefined,
-    country: typeof value.country === "string" ? value.country : undefined,
-    countryCode:
-      typeof value.countryCode === "string" ? value.countryCode : undefined,
-    latitude: value.latitude,
-    longitude: value.longitude,
-    timezone: typeof value.timezone === "string" ? value.timezone : undefined,
-  };
-}
 
 export function AppShell() {
   const { dict, language } = useI18n();
@@ -340,25 +309,6 @@ export function AppShell() {
         onChange={updateProfile}
         onReset={resetProfile}
       />
-    </div>
-  );
-}
-
-function SampleDataBanner({ snapshot }: { snapshot: AirQualitySnapshot }) {
-  const { dict } = useI18n();
-
-  return (
-    <div
-      role="alert"
-      className="flex items-start gap-3 rounded-xl border-2 border-rose-300 bg-rose-50 p-4 text-rose-950"
-    >
-      <IconAlert className="mt-0.5 h-5 w-5 shrink-0" />
-      <div>
-        <p className="text-sm font-bold">
-          {dict.app.demoData} — {snapshot.location.city}
-        </p>
-        <p className="mt-1 text-sm leading-6">{dict.source.notes.sample}</p>
-      </div>
     </div>
   );
 }

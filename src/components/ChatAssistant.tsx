@@ -16,23 +16,9 @@ import { localizeApiError } from "@/lib/errors";
 import { formatNumber, localeFor } from "@/lib/format";
 import { interpolate } from "@/lib/i18n";
 import { useI18n } from "./LanguageProvider";
+import { ChatMessageList } from "./chat/ChatMessageList";
+import type { ChatMessage, SourceReference } from "./chat/types";
 import { IconAlert, IconSend, IconShield } from "./icons";
-
-interface SourceReference {
-  id: string;
-  publisher: string;
-  title: string;
-  url: string;
-}
-
-interface ChatMessage {
-  id: string;
-  role: "user" | "assistant";
-  text: string;
-  provider?: string;
-  noticeKey?: string;
-  sources?: SourceReference[];
-}
 
 interface ChatAssistantProps {
   location: ResolvedLocation;
@@ -134,21 +120,9 @@ export function ChatAssistant({
     }
   }
 
-  function providerLabel(provider?: string): string | null {
-    if (provider === "gemini") return dict.assistant.providerGemini;
-    if (provider === "guard") return dict.assistant.providerGuard;
-    if (provider === "grounded-fallback") return dict.assistant.providerGrounded;
-    return null;
-  }
-
-  function noticeText(noticeKey?: string): string | null {
-    if (noticeKey === "assistant.offlineNotice") {
-      return dict.assistant.offlineNotice;
-    }
-    if (noticeKey === "assistant.fallbackNotice") {
-      return dict.assistant.fallbackNotice;
-    }
-    return null;
+  function handleSelectSuggestion(suggestion: string) {
+    setInput(suggestion);
+    inputRef.current?.focus();
   }
 
   function clearConversation() {
@@ -186,101 +160,12 @@ export function ChatAssistant({
         </p>
       </div>
 
-      <div
-        role="log"
-        aria-live="polite"
-        aria-relevant="additions text"
-        aria-busy={pending}
-        aria-label={dict.assistant.answerLabel}
-        className="mt-4 max-h-[26rem] space-y-3 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-3"
-      >
-        {messages.length === 0 ? (
-          <div>
-            <p className="text-sm text-slate-600">{dict.assistant.empty}</p>
-            <ul className="mt-2 flex flex-wrap gap-2">
-              {dict.assistant.suggestions.map((suggestion) => (
-                <li key={suggestion}>
-                  <button
-                    type="button"
-                    className="rounded-full border border-slate-300 bg-white px-3 py-1.5 text-left text-xs font-medium text-slate-800 hover:bg-slate-100"
-                    onClick={() => {
-                      setInput(suggestion);
-                      inputRef.current?.focus();
-                    }}
-                  >
-                    {suggestion}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : (
-          messages.map((message) => {
-            const isUser = message.role === "user";
-            const provider = providerLabel(message.provider);
-            const notice = noticeText(message.noticeKey);
-
-            return (
-              <article
-                key={message.id}
-                className={`rounded-xl border p-3 ${
-                  isUser
-                    ? "border-slate-300 bg-white"
-                    : "border-sky-200 bg-sky-50"
-                }`}
-              >
-                <h3 className="text-xs font-bold uppercase tracking-wide text-slate-600">
-                  {isUser ? dict.assistant.you : dict.assistant.aura}
-                </h3>
-                <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-slate-900">
-                  {message.text}
-                </p>
-
-                {!isUser && (provider || notice) ? (
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    {provider ? (
-                      <span className="badge bg-sky-800 text-white">
-                        {provider}
-                      </span>
-                    ) : null}
-                    {notice ? (
-                      <span className="text-xs leading-5 text-slate-600">
-                        {notice}
-                      </span>
-                    ) : null}
-                  </div>
-                ) : null}
-
-                {!isUser && message.sources && message.sources.length > 0 ? (
-                  <ul className="mt-2 space-y-1 text-xs">
-                    {message.sources.map((source) => (
-                      <li key={source.id}>
-                        <a
-                          href={source.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sky-800 underline decoration-sky-300 underline-offset-2 hover:text-sky-950"
-                        >
-                          {source.title}
-                        </a>{" "}
-                        <span className="text-slate-500">
-                          — {source.publisher}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-              </article>
-            );
-          })
-        )}
-
-        {pending ? (
-          <p role="status" className="text-sm font-medium text-sky-900">
-            {dict.assistant.thinking}
-          </p>
-        ) : null}
-      </div>
+      <ChatMessageList
+        messages={messages}
+        pending={pending}
+        dict={dict}
+        onSelectSuggestion={handleSelectSuggestion}
+      />
 
       {error ? (
         <div

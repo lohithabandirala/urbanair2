@@ -4,35 +4,14 @@ import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import type { ResolvedLocation } from "@/domain/types";
 import { formatNumber } from "@/lib/format";
 import { useI18n } from "./LanguageProvider";
-import { IconClose, IconLocate, IconPin, IconSearch } from "./icons";
-
-interface Place {
-  name: string;
-  region?: string;
-  country?: string;
-  countryCode?: string;
-  latitude: number;
-  longitude: number;
-  timezone?: string;
-}
+import { IconLocate, IconPin, IconSearch } from "./icons";
+import { LocationSearchResults } from "./location/LocationSearchResults";
+import type { LocationPickerStatus, LocationPlace } from "./location/types";
 
 interface LocationPickerProps {
   location: ResolvedLocation;
   onChange: (location: ResolvedLocation) => void;
   showDefaultNote: boolean;
-}
-
-type Status =
-  | "idle"
-  | "searching"
-  | "empty"
-  | "error"
-  | "locating"
-  | "denied"
-  | "unavailable";
-
-function placeLabel(place: Place): string {
-  return [place.region, place.country].filter(Boolean).join(", ");
 }
 
 export function LocationPicker({
@@ -43,8 +22,8 @@ export function LocationPicker({
   const { dict, language } = useI18n();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<Place[]>([]);
-  const [status, setStatus] = useState<Status>("idle");
+  const [results, setResults] = useState<LocationPlace[]>([]);
+  const [status, setStatus] = useState<LocationPickerStatus>("idle");
   const inputRef = useRef<HTMLInputElement>(null);
   const panelId = useId();
 
@@ -58,7 +37,7 @@ export function LocationPicker({
     setResults([]);
   }
 
-  function choose(place: Place) {
+  function choose(place: LocationPlace) {
     onChange({
       city: place.name,
       region: place.region,
@@ -88,7 +67,7 @@ export function LocationPicker({
       );
       const body = (await response.json()) as {
         ok?: boolean;
-        data?: { results?: Place[] };
+        data?: { results?: LocationPlace[] };
       };
       if (!response.ok || body.ok !== true) throw new Error("search failed");
       const found = body.data?.results ?? [];
@@ -117,7 +96,7 @@ export function LocationPicker({
           );
           const body = (await response.json()) as {
             ok?: boolean;
-            data?: { results?: Place[] };
+            data?: { results?: LocationPlace[] };
           };
           const place = body.data?.results?.[0];
           choose(
@@ -265,34 +244,11 @@ export function LocationPicker({
             </p>
           ) : null}
 
-          {results.length > 0 ? (
-            <div className="mt-2">
-              <p className="text-xs font-semibold text-slate-700">
-                {dict.location.results}
-              </p>
-              <ul className="mt-1 divide-y divide-slate-200 rounded-lg border border-slate-200">
-                {results.map((place) => (
-                  <li key={`${place.name}-${place.latitude}-${place.longitude}`}>
-                    <button
-                      type="button"
-                      onClick={() => choose(place)}
-                      className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-slate-50"
-                    >
-                      <span>
-                        <span className="font-semibold text-slate-900">
-                          {place.name}
-                        </span>
-                        <span className="block text-xs text-slate-600">
-                          {placeLabel(place)}
-                        </span>
-                      </span>
-                      <IconClose className="h-4 w-4 rotate-45 text-slate-400" />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
+          <LocationSearchResults
+            results={results}
+            title={dict.location.results}
+            onSelect={choose}
+          />
         </div>
       ) : null}
     </section>
